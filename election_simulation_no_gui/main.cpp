@@ -71,7 +71,10 @@ bool set_votes_for_nominee(vector<Nominee> &nominees)
         // Check if a nominee's name mathches
         //
         if (nominee.get_name() == nominee_name) {
-
+            unsigned int votes = 0;
+            cout << "Nominee found. Set nominee's votes: ";
+            cin >> votes;
+            nominee.add_multiple_votes(votes);
         }
     }
 }
