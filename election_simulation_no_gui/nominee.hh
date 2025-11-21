@@ -18,9 +18,7 @@ class Nominee
 {
 public:
     // Constructors
-    Nominee();
     Nominee(string name);
-    Nominee(string name, int nominee_number);
     // Destructor
     ~Nominee();
     // Raises vote count by 1
@@ -42,7 +40,8 @@ private:
     // Nominee's count of votes
     vote_type _vote_count;
     // Nominee's vote number
-    int _nominee_number;
+    unsigned int _nominee_number;
+    static unsigned int nominee_count;
 };
 
 #endif // NOMINEE_HH

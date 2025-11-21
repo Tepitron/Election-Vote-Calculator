@@ -1,24 +1,18 @@
 #include "nominee.hh"
-
-Nominee::Nominee() {
-    _vote_count = 0, _name = "NO NAME";
-}
+#include <iostream>
 
 Nominee::Nominee(string name)
 {
-    _name = name;
-}
-
-Nominee::Nominee(string name, int nominee_number)
-{
-    _vote_count = 0,
-    _name = name,
-    _nominee_number = nominee_number;
+    cout << "Constructor called for " << name << endl;
+    nominee_count++;
+    _vote_count = 0, _name = name,
+    _nominee_number = nominee_count;
 }
 
 Nominee::~Nominee()
 {
-
+    cout << "Destructor called" << endl;
+    nominee_count--;
 }
 
 void Nominee::add_vote()
@@ -37,7 +31,6 @@ void Nominee::remove_votes(vote_type votes_to_remove)
     {
         _vote_count -= votes_to_remove;
     }
-
 }
 
 vote_type Nominee::get_vote_count()
