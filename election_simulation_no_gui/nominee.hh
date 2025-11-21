@@ -12,30 +12,37 @@
 
 using namespace std;
 
+typedef unsigned long vote_type;
+
 class Nominee
 {
 public:
     // Constructors
     Nominee();
     Nominee(string name);
+    Nominee(string name, int nominee_number);
     // Destructor
     ~Nominee();
     // Raises vote count by 1
     void add_vote();
     // Raises vote count by x amount
-    void add_multiple_votes(unsigned int new_votes);
+    void add_multiple_votes(vote_type new_votes);
     // Decreases vote count by x amount
-    void remove_votes(unsigned int votes_to_remove);
+    void remove_votes(vote_type votes_to_remove);
     // Getter for vote count
-    unsigned int get_vote_count();
+    vote_type get_vote_count();
     // Getter for name
     string get_name();
+    // Getter for nominee number
+    unsigned int get_nominee_number();
 
 private:
     // Nominee's name
     string _name;
     // Nominee's count of votes
-    unsigned int _vote_count;
+    vote_type _vote_count;
+    // Nominee's vote number
+    int _nominee_number;
 };
 
 #endif // NOMINEE_HH

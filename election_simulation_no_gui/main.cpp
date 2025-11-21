@@ -19,23 +19,36 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <regex>
 #include "nominee.hh"
 
 using namespace std;
 
-typedef const string command;
+struct Command{
+    string command;
+    string description;
+};
 
-command ADD_NOMINEE = "a";
-command QUIT_PROGRAM = "q";
-command PRINT_NOMINEES = "p";
-command SET_VOTES = "s";
+Command ADD_NOMINEE = {"a", "Add a new nominee"};
+Command PRINT_NOMINEES = {"p", "Prints out all nominees"};
+Command SET_VOTES = {"s", "Set votes for one nominee"};
+Command QUIT_PROGRAM = {"q", "Exits the program"};
 
-const vector<string> ALL_COMMANDS =
-    {ADD_NOMINEE, QUIT_PROGRAM, PRINT_NOMINEES};
+/*const string ADD_NOMINEE = "a";
+const string QUIT_PROGRAM = "q";
+const string PRINT_NOMINEES = "p";
+const string SET_VOTES = "s";
+*/
+
+const vector<Command> ALL_COMMANDS =
+{
+    ADD_NOMINEE, PRINT_NOMINEES, SET_VOTES, QUIT_PROGRAM
+};
 
 void list_commands(){
-    for (command &command_to_print : ALL_COMMANDS) {
-        cout << command_to_print << endl;
+    for (auto &command_to_print : ALL_COMMANDS) {
+        cout << command_to_print.command << " " <<
+            command_to_print.description << endl;
     }
 }
 
@@ -55,8 +68,20 @@ void print_all_nominees(vector<Nominee> &nominees)
 {
     for (Nominee nominee : nominees)
     {
-        cout << nominee.get_name() << endl;
+        cout << "Nominee " << nominee.get_nominee_number() << " " <<
+            nominee.get_name() << endl;
     }
+}
+
+bool is_string_unsigned_number(string inputted_string)
+{
+    regex digit_check("[0-9]+");
+    if (regex_match(inputted_string, digit_check)){
+        cout << "It's a match" << endl;
+        return true;
+    }
+    cout << "No match" << endl;
+    return false;
 }
 
 bool set_votes_for_nominee(vector<Nominee> &nominees)
@@ -66,15 +91,21 @@ bool set_votes_for_nominee(vector<Nominee> &nominees)
     cin >> nominee_name;
 
     // Go through every nominee
-    for (Nominee nominee : nominees)
+    for (auto nominee : nominees)
     {
+        cout << "Going through nominees vector" << endl;
         // Check if a nominee's name mathches
-        //
+
         if (nominee.get_name() == nominee_name) {
-            unsigned int votes = 0;
+            string votes;
             cout << "Nominee found. Set nominee's votes: ";
             cin >> votes;
-            nominee.add_multiple_votes(votes);
+
+            if (is_string_unsigned_number(votes))
+            {
+                vote_type votes_ul = stoul(votes);
+                nominee.add_multiple_votes(votes_ul);
+            }
         }
     }
 }
@@ -82,16 +113,16 @@ bool set_votes_for_nominee(vector<Nominee> &nominees)
 int main()
 {
     vector<Nominee> vector_of_nominees;
-    cout << "Welcome to the election calculator. Right now implemented is transfrerable voting method" << endl;
+    cout << "Welcome to the election calculator. Right now implemented is transrerable voting method" << endl;
 
     string chosen_command = "no command";
 
-    while ( chosen_command != QUIT_PROGRAM)
+    while ( chosen_command != QUIT_PROGRAM.command)
     {
         list_commands();
         cout << "Insert a command: ";
         cin >> chosen_command;
-        if (chosen_command == ADD_NOMINEE)
+        if (chosen_command == ADD_NOMINEE.command)
         {
             if (!add_nominee(vector_of_nominees)) {
                cout << "nominee adding failed" << endl;
@@ -99,16 +130,15 @@ int main()
             continue;
         }
 
-        if (chosen_command == PRINT_NOMINEES)
+        if (chosen_command == PRINT_NOMINEES.command)
         {
             print_all_nominees(vector_of_nominees);
         }
 
-        if (chosen_command == SET_VOTES)
+        if (chosen_command == SET_VOTES.command)
         {
             set_votes_for_nominee(vector_of_nominees);
         }
-
 
     }
 
