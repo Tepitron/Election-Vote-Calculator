@@ -33,6 +33,8 @@ public:
     string get_name();
     // Getter for nominee number
     unsigned int get_nominee_number();
+    // Returns count of nominees
+    unsigned int get_nominee_count();
 
 private:
     // Nominee's name
@@ -41,6 +43,7 @@ private:
     vote_type _vote_count;
     // Nominee's vote number
     unsigned int _nominee_number;
+    // Counts the amount of each nominee object
     static unsigned int nominee_count;
 };
 

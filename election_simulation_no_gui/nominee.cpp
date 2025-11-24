@@ -47,3 +47,8 @@ unsigned int Nominee::get_nominee_number()
 {
     return _nominee_number;
 }
+
+unsigned int Nominee::get_nominee_count()
+{
+    return nominee_count;
+}
