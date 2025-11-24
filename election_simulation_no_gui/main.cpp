@@ -26,6 +26,7 @@
  *  h - Lists all commands
  */
 
+#include <cstring>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -47,15 +48,18 @@ Command CALCULATE_TRANSFERABLE = {"c", "Calculate results with"
                                        " the transferable voting method"};
 Command PRINT_COMMANDS = {"help", "Lists all available commands"};
 Command PRINT_NOMINEES = {"p", "Prints out all nominees"};
+Command READ_NOMINEES = {"n", "Reads nominee names from a file"};
 Command READ_VOTES = {"r", "Reads votes from a file"};
-Command SET_VOTES = {"s", "Set votes for one nominee"};
+Command SET_LIMIT = {"l", "Set limit for the vote calculator"};
 Command QUIT_PROGRAM = {"q", "Exits the program"};
+
+const int MAX_NAME_LENGTH = 20;
 
 const vector<Command> ALL_COMMANDS =
 {
     ADD_NOMINEE, BEGIN_VOTING, CALCULATE_TRANSFERABLE,
     PRINT_NOMINEES, READ_VOTES, PRINT_COMMANDS,
-    SET_VOTES, QUIT_PROGRAM
+    QUIT_PROGRAM
 };
 
 void list_commands(){
@@ -72,8 +76,15 @@ void add_nominee(vector<shared_ptr<Nominee>> &all_nominees)
     cout << "Insert nominee's name: ";
     cin >> nominee_name;
 
+    // Shouldn't happen because cin doesn't take empty input
     if (nominee_name.empty()) {
         throw invalid_argument("No nominee name");
+    }
+
+    // Throws error if nominee name is too long
+    else if (nominee_name.length() > MAX_NAME_LENGTH)
+    {
+        throw invalid_argument("Nominee name too long");
     }
 
     // Makes a unique pointer from nominee and pushes it into the all
@@ -98,53 +109,9 @@ bool is_string_unsigned_number(string inputted_string)
     return (regex_match(inputted_string, digit_check));
 }
 
-// Changes are made to the parameter itself
-bool set_votes_for_nominee(vector<shared_ptr<Nominee>> &nominees)
-{
-    string nominee_name;
-    cout << "Give nominee's name: ";
-    cin >> nominee_name;
-
-    // Go through every nominee
-    for (shared_ptr<Nominee> nominee_ptr : nominees)
-    {
-        cout << "Going through nominees vector" << endl;
-
-        // Check if a nominee's name mathches
-        if (nominee_ptr->get_name() == nominee_name) {
-            string votes;
-            cout << "Nominee found. Set nominee's votes: ";
-            cin >> votes;
-
-            // Check if given string contains only numbers and isn't negative
-            if (is_string_unsigned_number(votes))
-            {
-                vote_type votes_ul = stoul(votes);
-                nominee_ptr->add_multiple_votes(votes_ul);
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// nominees contains all the nominees who are included in the voting.
-// limit's type : const unsigned long.
-// Limit is the threshold to stop the counting process
-
-/*
-void calculate_transferable_voting(vector<Nominee> nominees,
-                                    const vote_type limit)
-{
-    vote_type min_votes;
-}
-*/
-
-// Returns true if vote_row contains only digits, is unsigned
-// and doesn't have duplicates.
 bool validate_vote_row(string vote_row)
 {
-    // Uses regex to check for digit 0-9
+    // Uses regular expression to check for digits 0-9
     if (is_string_unsigned_number(vote_row))
     {
 
@@ -152,10 +119,8 @@ bool validate_vote_row(string vote_row)
         for (char digit_char : vote_row)
         {
             int digit = atoi(&digit_char);
-            cout << "Checking digit: " << digit << endl;
             for (int used_number : used_numbers)
             {
-                cout << "Used number: " << used_number;
                 if (used_number == digit)
                 {
                     cout << "Read vote_row contains double digits. "
@@ -171,9 +136,9 @@ bool validate_vote_row(string vote_row)
     return false;
 }
 
-// Changes are made to the parameter itself
-void read_votes_from_file(vector<shared_ptr<Nominee>> &nominees)
+vector<vector<unsigned int>> read_votes_from_file()
 {
+    vector<vector<unsigned int>> all_votes_from_file;
     string file_path = "";
     cout << "Insert file path: ";
     cin >> file_path;
@@ -186,11 +151,95 @@ void read_votes_from_file(vector<shared_ptr<Nominee>> &nominees)
 
         while (getline(vote_file, vote_row))
         {
+            vector<unsigned int> vote_row_uint;
             cout << vote_row << endl;
-            validate_vote_row(vote_row);
+            if (validate_vote_row(vote_row))
+            {
+                for (char digit_char : vote_row)
+                {
+                    unsigned int digit = atoi(&digit_char);
+                    vote_row_uint.push_back(digit);
+                }
+                all_votes_from_file.push_back(vote_row_uint);
+            }
         }
-
         vote_file.close();
+    }
+    else{
+        cout << "File reading error" << endl;
+    }
+    return all_votes_from_file;
+}
+
+void transferable_voting_calculation(vector<vector<unsigned int>> vote_rows,
+                                     vector<shared_ptr<Nominee>> nominees,
+                                     unsigned int limit,
+                                     unsigned int vote_round)
+{
+
+    // Counts the initial votes
+    for (const vector<unsigned int> &vote_row : vote_rows)
+    {
+        unsigned int index = 0;
+        for (unsigned int digit : vote_row)
+        {
+            if (digit == vote_round)
+            {
+                nominees[index]->add_vote();
+                break;
+            }
+            index++;
+        }
+    }
+
+    shared_ptr<Nominee> leading_nominee_ptr = nominees[0];
+    cout << "Vote after first round:" << endl;
+    for (auto nominee_ptr : nominees)
+    {
+        if (nominee_ptr->get_vote_count() > leading_nominee_ptr->get_vote_count())
+        {
+            leading_nominee_ptr = nominee_ptr;
+        }
+        cout << "Nominee: " << nominee_ptr->get_name() <<
+            " " << nominee_ptr->get_nominee_number() <<
+            " has " << nominee_ptr->get_vote_count() <<
+            " amount of votes" << endl << endl;
+    }
+    cout << "Leader is " << leading_nominee_ptr->get_name()
+         << " with " << leading_nominee_ptr->get_vote_count()
+         << " votes" << endl;
+
+}
+
+unsigned int set_limit()
+{
+    unsigned int limit;
+    cout << "Set limit for the voting calculator to stop at: ";
+    cin >> limit;
+    return limit;
+}
+
+void read_nominees_from_file(vector<shared_ptr<Nominee>> &nominees)
+{
+    string file_path = "";
+    cout << "Input file path: ";
+    cin >> file_path;
+
+    ifstream nominee_file(file_path);
+
+    if (nominee_file.is_open())
+    {
+        string nominee_name;
+        while (getline(nominee_file, nominee_name))
+        {
+            shared_ptr<Nominee> new_nominee_ptr(new Nominee(nominee_name));
+            nominees.push_back(new_nominee_ptr);
+        }
+        nominee_file.close();
+    }
+    else
+    {
+        cout << "Error reading nominee file" << endl;
     }
 }
 
@@ -199,6 +248,7 @@ int main()
 {
     vector<vector<unsigned int>> vote_rows;
     vector<shared_ptr<Nominee>> vector_of_nominees;
+    unsigned int vote_end_limit = 0;
     cout << "Welcome to the election calculator. Right now implemented is transrerable voting method" << endl;
 
     string chosen_command = "no command";
@@ -215,14 +265,17 @@ int main()
                 add_nominee(vector_of_nominees);
             }
 
+            if (chosen_command == CALCULATE_TRANSFERABLE.command)
+            {
+                transferable_voting_calculation(vote_rows,
+                                                vector_of_nominees,
+                                                vote_end_limit,
+                                                1);
+            }
+
             if (chosen_command == PRINT_NOMINEES.command)
             {
                 print_all_nominees(vector_of_nominees);
-            }
-
-            if (chosen_command == SET_VOTES.command)
-            {
-                set_votes_for_nominee(vector_of_nominees);
             }
 
             if (chosen_command == PRINT_COMMANDS.command)
@@ -232,7 +285,17 @@ int main()
 
             if (chosen_command == READ_VOTES.command)
             {
-                read_votes_from_file(vector_of_nominees);
+                vote_rows = read_votes_from_file();
+            }
+
+            if (chosen_command == READ_NOMINEES.command)
+            {
+                read_nominees_from_file(vector_of_nominees);
+            }
+
+            if (chosen_command == SET_LIMIT.command)
+            {
+                vote_end_limit = set_limit();
             }
         }
         catch (const invalid_argument& e)
