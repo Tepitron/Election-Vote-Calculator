@@ -33,6 +33,7 @@
 #include <regex>
 #include <memory>
 #include <fstream>
+#include <unordered_map>
 #include "nominee.hh"
 
 using namespace std;
@@ -136,9 +137,48 @@ bool validate_vote_row(string vote_row)
     return false;
 }
 
-vector<vector<unsigned int>> read_votes_from_file()
+// vote_row        Line to be parsed. Assumed format x:y;a:b;c:d etc.
+// delimiter = ';' Indicates new nominee and vote pair
+// divider   = ':' Divides nominee and vote digits
+unordered_map<vote_type, vote_type> parse_vote_row( string &vote_row,
+                                                    const char delimiter,
+                                                    const char divider)
 {
-    vector<vector<unsigned int>> all_votes_from_file;
+    unordered_map<vote_type, vote_type> nom_and_vote;
+    vote_type nominee_number;
+    vote_type vote;
+    bool new_vote = true;
+    for (char c : vote_row)
+    {
+        if (new_vote)
+        {
+            nominee_number = atoi(&c);
+            new_vote = false;
+        }
+
+        else if (c == divider)
+        {
+            continue;
+        }
+
+        else if (c == delimiter)
+        {
+            new_vote = true;
+        }
+
+        else
+        {
+            vote = atoi(&c);
+            nom_and_vote[nominee_number] = vote;
+            cout << vote << endl;
+        }
+    }
+    return nom_and_vote;
+}
+
+vector<unordered_map<vote_type, vote_type>> read_votes_from_file()
+{
+    vector<unordered_map<vote_type, vote_type>> all_votes_from_file;
     string file_path = "";
     cout << "Insert file path: ";
     cin >> file_path;
@@ -149,19 +189,15 @@ vector<vector<unsigned int>> read_votes_from_file()
     {
         string vote_row;
 
+        int counter = 1;
         while (getline(vote_file, vote_row))
         {
-            vector<unsigned int> vote_row_uint;
-            cout << vote_row << endl;
-            if (validate_vote_row(vote_row))
-            {
-                for (char digit_char : vote_row)
-                {
-                    unsigned int digit = atoi(&digit_char);
-                    vote_row_uint.push_back(digit);
-                }
-                all_votes_from_file.push_back(vote_row_uint);
-            }
+            unordered_map<vote_type, vote_type> parsed_vote_row =
+                parse_vote_row(vote_row, ';', ':');
+            all_votes_from_file.push_back(parsed_vote_row);
+
+            cout << "Lines read: " << counter << endl;
+            counter++;
         }
         vote_file.close();
     }
@@ -171,29 +207,11 @@ vector<vector<unsigned int>> read_votes_from_file()
     return all_votes_from_file;
 }
 
-void transferable_voting_calculation(vector<vector<unsigned int>> vote_rows,
-                                     vector<shared_ptr<Nominee>> nominees,
-                                     unsigned int limit,
-                                     unsigned int vote_round)
+void print_current_vote_round(vector<shared_ptr<Nominee>> &nominees,
+                              unsigned int vote_round)
 {
-
-    // Counts the initial votes
-    for (const vector<unsigned int> &vote_row : vote_rows)
-    {
-        unsigned int index = 0;
-        for (unsigned int digit : vote_row)
-        {
-            if (digit == vote_round)
-            {
-                nominees[index]->add_vote();
-                break;
-            }
-            index++;
-        }
-    }
-
     shared_ptr<Nominee> leading_nominee_ptr = nominees[0];
-    cout << "Vote after first round:" << endl;
+    cout << "Vote after round " << vote_round << ":" << endl;
     for (auto nominee_ptr : nominees)
     {
         if (nominee_ptr->get_vote_count() > leading_nominee_ptr->get_vote_count())
@@ -208,6 +226,29 @@ void transferable_voting_calculation(vector<vector<unsigned int>> vote_rows,
     cout << "Leader is " << leading_nominee_ptr->get_name()
          << " with " << leading_nominee_ptr->get_vote_count()
          << " votes" << endl;
+}
+
+void transferable_voting_calculation(vector<unordered_map<vote_type, vote_type>> all_votes,
+                                     vector<shared_ptr<Nominee>> nominees,
+                                     unsigned int limit,
+                                     unsigned int vote_round)
+{
+
+    // Counts the initial votes
+    for (auto nominee : nominees)
+    {
+        for (auto vote_row : all_votes)
+        {
+            if (vote_row[nominee->get_nominee_number()] == vote_round)
+            {
+                nominee->add_multiple_votes(vote_row[nominee->get_nominee_number()]);
+            }
+        }
+    }
+
+
+    //Print round situation
+    print_current_vote_round(nominees, vote_round);
 
 }
 
@@ -246,11 +287,13 @@ void read_nominees_from_file(vector<shared_ptr<Nominee>> &nominees)
 unsigned int Nominee::nominee_count = 0;
 int main()
 {
-    vector<vector<unsigned int>> vote_rows;
+    // Vector of vector of unordered maps. Key is nominee's number and value is
+    // the vote.
+    vector<unordered_map<vote_type, vote_type>> all_votes;
     vector<shared_ptr<Nominee>> vector_of_nominees;
     unsigned int vote_end_limit = 0;
-    cout << "Welcome to the election calculator. Right now implemented is transrerable voting method" << endl;
 
+    cout << "Welcome to the election calculator. Right now implemented is transrerable voting method" << endl;
     string chosen_command = "no command";
     list_commands();
     // Commands are asked until user inputs the quit command.
@@ -267,7 +310,7 @@ int main()
 
             if (chosen_command == CALCULATE_TRANSFERABLE.command)
             {
-                transferable_voting_calculation(vote_rows,
+                transferable_voting_calculation(all_votes,
                                                 vector_of_nominees,
                                                 vote_end_limit,
                                                 1);
@@ -285,7 +328,7 @@ int main()
 
             if (chosen_command == READ_VOTES.command)
             {
-                vote_rows = read_votes_from_file();
+                all_votes = read_votes_from_file();
             }
 
             if (chosen_command == READ_NOMINEES.command)
