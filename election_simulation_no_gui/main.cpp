@@ -137,7 +137,7 @@ bool validate_vote_row(string vote_row)
     return false;
 }
 
-// vote_row        Line to be parsed. Assumed format x:y;a:b;c:d etc.
+// vote_row        Line to be parsed. Assumed format a:x;b:y;c:z etc.
 // delimiter = ';' Indicates new nominee and vote pair
 // divider   = ':' Divides nominee and vote digits
 unordered_map<vote_type, vote_type> parse_vote_row( string &vote_row,
@@ -176,6 +176,9 @@ unordered_map<vote_type, vote_type> parse_vote_row( string &vote_row,
     return nom_and_vote;
 }
 
+// Asks for the file path. Assumes it uses this format:
+// a:x;b:y;c:z
+// Reads the vote data and stores it in a vector of unordered maps
 vector<unordered_map<vote_type, vote_type>> read_votes_from_file()
 {
     vector<unordered_map<vote_type, vote_type>> all_votes_from_file;
@@ -207,6 +210,8 @@ vector<unordered_map<vote_type, vote_type>> read_votes_from_file()
     return all_votes_from_file;
 }
 
+// For printing purposes only. Checks who has the most votes.
+// If tied the first given nominee is declared winning
 void print_current_vote_round(vector<shared_ptr<Nominee>> &nominees,
                               unsigned int vote_round)
 {
@@ -228,6 +233,7 @@ void print_current_vote_round(vector<shared_ptr<Nominee>> &nominees,
          << " votes" << endl;
 }
 
+// Calculates votes. Now only first round implemented
 void transferable_voting_calculation(vector<unordered_map<vote_type, vote_type>> all_votes,
                                      vector<shared_ptr<Nominee>> nominees,
                                      unsigned int limit,
@@ -252,6 +258,7 @@ void transferable_voting_calculation(vector<unordered_map<vote_type, vote_type>>
 
 }
 
+// Set limit to stop vote calculation
 unsigned int set_limit()
 {
     unsigned int limit;
@@ -260,6 +267,8 @@ unsigned int set_limit()
     return limit;
 }
 
+// Reads nominee's names from a text file. Assumes the names are
+// given one in a row.
 void read_nominees_from_file(vector<shared_ptr<Nominee>> &nominees)
 {
     string file_path = "";
